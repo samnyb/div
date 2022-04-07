@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "bpXcY6yoMhpRVPZ3LqUjitcdn2b9uyp8NCLmv0No7DVaCqWh9iThm0K4f5Cp7K943Ua11fgkf8Wg48xOe/ZYSg==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\SamuelNyberg\\Documents\\GitHub\\div\\ARK385\\ARK385.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\SamuelNyberg\\.nuget\\packages\\grasshopper\\7.13.21348.13001\\grasshopper.7.13.21348.13001.nupkg.sha512",
+    "C:\\Users\\SamuelNyberg\\.nuget\\packages\\rhinocommon\\7.13.21348.13001\\rhinocommon.7.13.21348.13001.nupkg.sha512"
+  ],
+  "logs": []
+}
