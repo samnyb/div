@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace ARK385
 {
-    public class TrajectoryCompuration : GH_Component
+    public class TrajectoryComputation : GH_Component
     {
         /// <summary>
         /// Each implementation of GH_Component must provide a public 
@@ -15,7 +15,7 @@ namespace ARK385
         /// Subcategory the panel. If you use non-existing tab or panel names, 
         /// new tabs/panels will automatically be created.
         /// </summary>
-        public TrajectoryCompuration() : base("Trajectory computation", "TrajComp", "Calculates the trajectory of a launched object.", "ARK385", "Subcategory")
+        public TrajectoryComputation() : base("Trajectory computation", "TrajComp", "Calculates the trajectory of a launched object.", "ARK385", "Subcategory")
         {
         }
 
@@ -24,10 +24,10 @@ namespace ARK385
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddPointParameter("Point", "Pt", "The initial location of the object.", GH_ParamAccess.item);
+            pManager.AddPointParameter("Point", "Pt", "The initial location of the object.", GH_ParamAccess.item, new Point3d(0, 0, 0));
             pManager.AddNumberParameter("Velocity", "v", "Initial velocity of object in m/s (double)", GH_ParamAccess.list); // Accessar list ifall man vill ge många olika hastigheter och sådant
             pManager.AddVectorParameter("Vector", "V", "Initial direction vector of object (vector)", GH_ParamAccess.list);
-            pManager.AddNumberParameter("Iterations", "n", "Number of displayed points along trajectory (1/second)", GH_ParamAccess.item, 20); 
+            pManager.AddIntegerParameter("Iterations", "n", "Number of displayed points along trajectory (1/second)", GH_ParamAccess.item, 20);
             // Överväg att addera typ frekvens, tid osv
         }
 
@@ -50,11 +50,12 @@ namespace ARK385
             // Variables for saving our initial values in
             Point3d pt = new Point3d();
             List<double> velocity = new List<double>();
-            List<Vector2d> vectors = new List<Vector2d>();
+            List<Vector3d> vectors = new List<Vector3d>();
             int iterations = new int();
 
             // Variables for later use
             Point2d tempPoint = new Point2d();
+            Vector2d tempVel = new Vector2d();
 
             // Variables to output
             List<Point2d> location = new List<Point2d>();
@@ -73,13 +74,13 @@ namespace ARK385
             if (!DA.GetDataList(1, velocity)) return;
             if (velocity.Count == 0)
             {
-                velocity[0] = 0;                                // If the list is empty, add a velocity of zero.
+                velocity.Add(0);                                // If the list is empty, add a velocity of zero.
             }
 
             if (!DA.GetDataList(2, vectors)) return;
-            if (velocity.Count == 0)
+            if (vectors.Count == 0)
             {
-                vectors[0] = new Vector2d(1, 5);                // If the list is empty, add a basic initial vector.
+                vectors.Add(new Vector3d(1, 5, 0));                // If the list is empty, add a basic initial vector.
             }
 
 
@@ -91,19 +92,40 @@ namespace ARK385
             }
 
             // Actual runtime
+
+            // IF vectors and velocities aren't long enough, pad in some way? Maybe test first though
+
+            foreach (Vector3d v in vectors)
+            {
+                v.Unitize();
+            }
+
             tempPoint.X = pt.X;
             tempPoint.Y = pt.Y;
 
-            for (int i = 0; i < iterations; i++)
+            tempVel.X = vectors[0].X * velocity[0];
+            tempVel.Y = vectors[0].Y * velocity[0]; 
+
+            for (double i = 0; i < iterations; i+= 0.1)
             {
-                tempPoint.X = i * velocity[0];
-                location[i] = tempPoint;
+                tempVel.Y = tempVel.Y - 9.82 * i;
+                tempPoint.X = /*tempPoint.X +*/ tempVel.X * i; //Ska den verkligen vara där? Det blir ju bara snabbare och snabbare..!!
+                tempPoint.Y = tempPoint.Y + tempVel.Y * i; // Den här är ev. inte heller rätt, det borde väl vara delat med två någonstans? undersök. Vore najs att slå ihop det med "initiella" värden på något sätt också.
+                if (tempPoint.Y < 0)
+                {
+                    tempPoint.Y = Math.Abs(tempPoint.Y);
+                    tempVel.Y = Math.Abs(tempVel.Y);            // Det här funkar inte, återkom till stutsen.
+                }
+                location.Add(tempPoint);
             }
 
             foreach (Point2d node in location)
             {
                 trajectory.Add(new Point3d(node.X, node.Y, 0));
             }
+
+            DA.SetDataList(0, location);
+            DA.SetData(1, trajectory);
         }
 
         /// <summary>
