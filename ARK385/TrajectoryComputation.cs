@@ -29,6 +29,9 @@ namespace ARK385
             pManager.AddVectorParameter("Vector", "V", "Initial direction vector of object (vector)", GH_ParamAccess.list);
             pManager.AddIntegerParameter("Iterations", "n", "Number of displayed points along trajectory (1/second)", GH_ParamAccess.item, 20);
             // Överväg att addera typ frekvens, tid osv
+
+            // TODO: det är inte sant att iterationen är per sekund för hastigheten ges nu i m/s, men är helt opåverkad av iterationen. Samstäm.
+            // ELLER???
         }
 
         /// <summary>
@@ -55,7 +58,9 @@ namespace ARK385
 
             // Variables for later use
             Point2d tempPoint = new Point2d();
+            Point2d prevPoint = new Point2d();
             Vector2d tempVel = new Vector2d();
+            Vector2d prevVel = new Vector2d();
 
             // Variables to output
             List<Point2d> location = new List<Point2d>();
@@ -93,30 +98,41 @@ namespace ARK385
 
             // Actual runtime
 
-            // IF vectors and velocities aren't long enough, pad in some way? Maybe test first though
-
             foreach (Vector3d v in vectors)
             {
                 v.Unitize();
             }
 
-            tempPoint.X = pt.X;
-            tempPoint.Y = pt.Y;
+            // Utgångsvärden
+            prevPoint.X = pt.X;
+            prevPoint.Y = pt.Y;
 
-            tempVel.X = vectors[0].X * velocity[0];
-            tempVel.Y = vectors[0].Y * velocity[0]; 
+            prevVel.X = vectors[0].X * velocity[0];
+            prevVel.Y = vectors[0].Y * velocity[0];
 
-            for (double i = 0; i < iterations; i+= 0.1)
+            int bounceReset = 0;
+
+            for (int t = 0; t < iterations*10; t++)
             {
-                tempVel.Y = tempVel.Y - 9.82 * i;
-                tempPoint.X = /*tempPoint.X +*/ tempVel.X * i; //Ska den verkligen vara där? Det blir ju bara snabbare och snabbare..!!
-                tempPoint.Y = tempPoint.Y + tempVel.Y * i; // Den här är ev. inte heller rätt, det borde väl vara delat med två någonstans? undersök. Vore najs att slå ihop det med "initiella" värden på något sätt också.
-                if (tempPoint.Y < 0)
+                tempVel.X = prevVel.X;
+                tempVel.Y = prevVel.Y - 9.82 * t/10;
+
+                tempPoint.X = prevPoint.X + tempVel.X;
+                tempPoint.Y = prevPoint.Y + tempVel.Y;
+
+                bounceReset++;
+
+                if (tempPoint.Y <= 0)
                 {
-                    tempPoint.Y = Math.Abs(tempPoint.Y);
-                    tempVel.Y = Math.Abs(tempVel.Y);            // Det här funkar inte, återkom till stutsen.
+                    break;
+                    /*tempPoint.Y = Math.Abs(tempPoint.Y);
+                    tempVel.Y = Math.Sqrt(0.1 * Math.Pow(tempVel.Y, 2));            // Math.Abs(tempVel.Y) * 0.1;
+                    bounceReset = 0;*/
                 }
+
                 location.Add(tempPoint);
+                prevVel = tempVel;
+                prevPoint = tempPoint;
             }
 
             foreach (Point2d node in location)
