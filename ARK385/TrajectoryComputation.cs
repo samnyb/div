@@ -25,13 +25,9 @@ namespace ARK385
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddPointParameter("Point", "Pt", "The initial location of the object.", GH_ParamAccess.item, new Point3d(0, 0, 0));
-            pManager.AddNumberParameter("Velocity", "v", "Initial velocity of object in m/s (double)", GH_ParamAccess.list); // Accessar list ifall man vill ge många olika hastigheter och sådant
+            pManager.AddNumberParameter("Velocity", "v", "Initial velocity of object in m/s (double)", GH_ParamAccess.list);
             pManager.AddVectorParameter("Vector", "V", "Initial direction vector of object (vector)", GH_ParamAccess.list);
-            pManager.AddIntegerParameter("Iterations", "n", "Number of displayed points along trajectory (1/second)", GH_ParamAccess.item, 20);
-            // Överväg att addera typ frekvens, tid osv
-
-            // TODO: det är inte sant att iterationen är per sekund för hastigheten ges nu i m/s, men är helt opåverkad av iterationen. Samstäm.
-            // ELLER???
+            pManager.AddIntegerParameter("Iterations", "n", "Number of displayed points along trajectory", GH_ParamAccess.item, 20);
         }
 
         /// <summary>
@@ -88,7 +84,7 @@ namespace ARK385
                 vectors.Add(new Vector3d(1, 5, 0));                // If the list is empty, add a basic initial vector.
             }
 
-
+            
             if (!DA.GetData(3, ref iterations)) return;
             if (iterations < 0)
             {
@@ -97,37 +93,31 @@ namespace ARK385
             }
 
             // Actual runtime
-
             foreach (Vector3d v in vectors)
             {
                 v.Unitize();
             }
 
-            // Utgångsvärden
+            // Starting values
             prevPoint.X = pt.X;
             prevPoint.Y = pt.Y;
+            location.Add(prevPoint);
 
             prevVel.X = vectors[0].X * velocity[0];
             prevVel.Y = vectors[0].Y * velocity[0];
 
-            int bounceReset = 0;
-
-            for (int t = 0; t < iterations*10; t++)
+            // Iteration
+            for (int t = 0; t < iterations; t++)
             {
                 tempVel.X = prevVel.X;
-                tempVel.Y = prevVel.Y - 9.82 * t/10;
+                tempVel.Y = prevVel.Y - 9.82 * t / 10;
 
                 tempPoint.X = prevPoint.X + tempVel.X;
                 tempPoint.Y = prevPoint.Y + tempVel.Y;
 
-                bounceReset++;
-
                 if (tempPoint.Y <= 0)
                 {
-                    break;
-                    /*tempPoint.Y = Math.Abs(tempPoint.Y);
-                    tempVel.Y = Math.Sqrt(0.1 * Math.Pow(tempVel.Y, 2));            // Math.Abs(tempVel.Y) * 0.1;
-                    bounceReset = 0;*/
+                    t = iterations;
                 }
 
                 location.Add(tempPoint);
@@ -135,6 +125,7 @@ namespace ARK385
                 prevPoint = tempPoint;
             }
 
+            // Creating trajectory curve
             foreach (Point2d node in location)
             {
                 trajectory.Add(new Point3d(node.X, node.Y, 0));
@@ -143,6 +134,8 @@ namespace ARK385
             DA.SetDataList(0, location);
             DA.SetData(1, trajectory);
         }
+
+
 
         /// <summary>
         /// Provides an Icon for every component that will be visible in the User Interface.
